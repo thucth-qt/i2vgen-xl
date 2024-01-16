@@ -8,6 +8,7 @@ fairscale==0.4.6
 ipdb
 open-clip-torch==2.0.2
 xformers==0.0.13
+# xformers
 chardet==5.1.0
 torchdiffeq==0.2.3
 opencv-python==4.4.0.46

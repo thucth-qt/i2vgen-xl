@@ -49,20 +49,36 @@ UNet: {
     'use_fps_condition': False,
     'use_sim_mask': False
 }
+# Diffusion: {
+#     'type': 'DiffusionDDIM',
+#     'schedule': 'cosine', # cosine
+#     'schedule_param': {
+#         'num_timesteps': 1000,
+#         'cosine_s': 0.008,
+#         'zero_terminal_snr': True,
+#     },
+#     'mean_type': 'v',
+#     'loss_type': 'mse',
+#     'var_type': 'fixed_small',
+#     'rescale_timesteps': False,
+#     'noise_strength': 0.1
+# }
 Diffusion: {
     'type': 'DiffusionDDIM',
-    'schedule': 'cosine', # cosine
+    'schedule': 'linear_sd', # cosine
     'schedule_param': {
         'num_timesteps': 1000,
-        'cosine_s': 0.008,
-        'zero_terminal_snr': True,
+        'init_beta': 0.00085,
+        'last_beta': 0.0120,
+        'zero_terminal_snr': False,
     },
-    'mean_type': 'v',
+    'mean_type': 'eps',
     'loss_type': 'mse',
     'var_type': 'fixed_small',
     'rescale_timesteps': False,
-    'noise_strength': 0.1
+    'noise_strength': 0.0
 }
+
 batch_sizes: {
     "1": 32,
     "4": 8,
@@ -83,7 +99,7 @@ Pretrain: {
     'type': pretrain_specific_strategies,
     'fix_weight': False,
     'grad_scale': 0.5,
-    'resume_checkpoint': 'workspace/model_bk/model_scope_0267000.pth',
+    'resume_checkpoint': 'models/model_scope_0267000.pth',
     'sd_keys_path': 'data/stable_diffusion_image_key_temporal_attention_x1.json',
 }
 
