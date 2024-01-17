@@ -104,7 +104,7 @@ def worker(gpu, cfg):
     cfg.sample_fps = cfg.sample_fps[cfg.rank % len_fps]
     
     if cfg.rank == 0:
-        logging.info(f'Currnt worker with max_frames={cfg.max_frames}, batch_size={cfg.batch_size}, sample_fps={cfg.sample_fps}')
+        logging.info(f'Current worker with max_frames={cfg.max_frames}, batch_size={cfg.batch_size}, sample_fps={cfg.sample_fps}')
 
     train_trans = data.Compose([
         data.CenterCropWide(size=cfg.resolution),
@@ -289,7 +289,8 @@ def worker(gpu, cfg):
                     logging.info(f'Save videos with exception {e}')
         
         # Save checkpoint
-        if step == cfg.num_steps or step % cfg.save_ckp_interval == 0 or step == resume_step:
+        # if step == cfg.num_steps or step % cfg.save_ckp_interval == 0 or step == resume_step:
+        if step == cfg.num_steps or step % cfg.save_ckp_interval == 0:
             os.makedirs(osp.join(cfg.log_dir, 'checkpoints'), exist_ok=True)
             if cfg.use_ema:
                 local_ema_model_path = osp.join(cfg.log_dir, f'checkpoints/ema_{step:08d}_rank{cfg.rank:04d}.pth')
@@ -307,6 +308,14 @@ def worker(gpu, cfg):
                     'step': step}
                 torch.save(save_dict, local_model_path)
                 logging.info(f'Save model to {local_model_path}')
+
+                # remove the second latest ckpt
+                try:
+                    if osp.exists(osp.join(cfg.log_dir, 'checkpoints', f'non_ema_{(step-2*cfg.save_ckp_interval):08d}.pth')):
+                        os.remove(osp.join(cfg.log_dir, 'checkpoints', f'non_ema_{(step-2*cfg.save_ckp_interval):08d}.pth'))
+                        logging.info(f'Remove ckpt {step-2*cfg.save_ckp_interval:08d}.pth')
+                except:
+                    pass
     
     if cfg.rank == 0:
         logging.info('Congratulations! The training is completed!')

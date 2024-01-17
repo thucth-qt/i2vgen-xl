@@ -3,8 +3,8 @@ ENABLE: true
 max_frames: 24 # max_frames = 1 training with images
 use_ema: false
 num_workers: 6
-frame_lens: [1, 16, 16, 16, 16, 32, 32, 32]
-sample_fps: [1,  8,  16, 16, 16, 8,  16, 16]
+frame_lens: [16, 16, 16, 16, 32, 32, 32]
+sample_fps: [8,  16, 16, 16, 8,  16, 16]
 resolution: [448, 256]
 vit_resolution: [224, 224]
 vid_dataset: {
@@ -100,20 +100,21 @@ Pretrain: {
     'type': pretrain_specific_strategies,
     'fix_weight': False,
     'grad_scale': 0.5,
-    'resume_checkpoint': 'models/model_scope_0267000.pth',
+    'resume_checkpoint': 'models/model_scope_1.pth',
     'sd_keys_path': 'models/stable_diffusion_image_key_temporal_attention_x1.json',
 }
 
 chunk_size: 4
 decoder_bs: 4
-lr: 0.00003
+# lr: 0.00003
+lr: 0.00005
 
-noise_strength: 0.1
+
+noise_strength: 0.05
 # classifier-free guidance
 p_zero: 0.1
 guide_scale: 3.0
-# num_steps: 1000000
-num_steps: 5000
+num_steps: 10000
 
 use_zero_infer: True
 viz_interval: 25        # 200
