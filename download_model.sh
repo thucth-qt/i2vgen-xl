@@ -1,5 +1,5 @@
 # WEIGHTS_DIR="/data/thucth/weights/t2vgen"
-WEIGHTS_DIR="weights"
+WEIGHTS_DIR="models"
 mkdir -p $WEIGHTS_DIR
 
 wget "https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K/resolve/main/open_clip_pytorch_model.bin?download=true" -P $WEIGHTS_DIR
