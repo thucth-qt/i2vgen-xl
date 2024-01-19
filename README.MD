@@ -1,0 +1,74 @@
+## Installation
+
+install conda first on colab.
+```bash 
+!mkdir -p ~/miniconda3
+!wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+!bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+!rm -rf ~/miniconda3/miniconda.sh
+
+!/root/miniconda3/bin/conda create -n envt2v python=3.8
+!mv /usr/local/bin/python /usr/local/bin/python_bk
+!ln -s /root/miniconda3/envs/envt2v/bin/python3 /usr/local/bin/python
+!mv /usr/local/bin/pip /usr/local/bin/pip_bk
+!ln -s /root/miniconda3/envs/envt2v/bin/pip /usr/local/bin/pip
+
+```
+
+install packages for the project
+```
+pip install torch==1.12.0+cu113 torchvision==0.13.0+cu113 torchaudio==0.12.0 --extra-index-url https://download.pytorch.org/whl/cu113
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+You  also need to ensure that your system has installed the `ffmpeg` command. If it is not installed, you can install it using the following command:
+```
+sudo apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+```
+
+## Download pretrained weights
+Run script:
+
+```
+bash download_model.sh
+```
+
+After running the script, weights are placed in models:
+
+![Alt text](doc/image-1.png)
+
+
+## Training Datasets
+
+Place your videos in ``data/videos``<br>
+![Alt text](doc/image.png)
+
+
+Place your video paths and prompts in ``data/vid_list.txt``<br>
+![Alt text](doc/image-2.png)
+
+
+## Train your text-to-video model
+
+```
+python train_net.py --cfg configs/cfg_train.yaml
+```
+
+- During the training, you can view the saved models and intermediate inference results in the `workspace/experiments/cfg_train`directory.
+
+## Test Datasets
+
+Place your prompts in ``data/test_prompts.txt``<br>
+![Alt text](doc/image-3.png)
+
+
+## Inference
+
+After the training is completed, you can perform inference on the model using the following command.
+- Notice that you need to specify the path of the trained model in ``configs/cfg_infer.yaml``<br>
+![Alt text](doc/image-4.png)
+```
+python inference.py --cfg configs/cfg_infer.yaml
+```
+
+Then you can find the videos you generated in the ``workspace/experiments/test_prompts`` directory. 
