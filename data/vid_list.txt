@@ -1,1 +1,5 @@
 Breast_MRI_102.mp4|||luminal-like, nuclear tumor, Nottingham grade: low, ductal, R 12
+Breast_MRI_102.mp4|||a low-grade ductal tumor with Nottingham grade R12
+Breast_MRI_102.mp4|||the nuclear features of a luminal-like tumor with Nottingham grade R12 in a ductal carcinoma
+Breast_MRI_102.mp4|||the low-grade, ductal nature of a luminal-like tumor with Nottingham grade R12 in the nucleus
+Breast_MRI_102.mp4|||the luminal-like properties of a ductal tumor graded as low according to Nottingham classification, with a focus on the R12 region.

@@ -9,6 +9,7 @@ from utils.registry_class import DIFFUSION
 from .schedules import beta_schedule
 from .losses import kl_divergence, discretized_gaussian_log_likelihood
 from tools.metrics import calculate_fvd, calculate_clipsim
+import logging
 # from .dpm_solver import NoiseScheduleVP, model_wrapper_guided_diffusion, model_wrapper, DPM_Solver
 # def _i(tensor, t, x):
 #     r"""Index tensor using t and format the output according to x.
@@ -495,9 +496,7 @@ class DiffusionDDIM(object):
                             ddim_timesteps=50,
                             decoder_bs=2, 
                             scale_factor = 0.18215, 
-                            batch_size=1, 
-                            ref_frames=None, 
-                            noise=None):
+                            batch_size=1):
         # noise = torch.randn_like(x0) if noise is None else noise # [80, 4, 8, 32, 32]
 
         # predict xt
@@ -523,9 +522,11 @@ class DiffusionDDIM(object):
         # videos: BCTHW
 
         # Calculate FVD
+        logging.info("Calculating FVD...")
         fvd_score = calculate_fvd(torch.from_numpy(videos1), torch.from_numpy(videos2), device=x0.device) 
 
         # Calculate CLIP similarity
+        logging.info("Calculating CLIP similarity...")
         clipsim_score = calculate_clipsim(torch.from_numpy(videos2), prompts, device=x0.device) 
         metrics={"fvd":fvd_score, "clipsim":clipsim_score}
         return metrics

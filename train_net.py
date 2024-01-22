@@ -7,6 +7,7 @@ import random
 import logging
 import itertools
 import numpy as np
+os.environ['TOKENIZERS_PARALLELISM']='false'
 
 from utils.config import Config
 from utils.registry_class import ENGINE

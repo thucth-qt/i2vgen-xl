@@ -3,7 +3,7 @@ from .clip_multimodel import CLIPScore
 from einops import rearrange
 from torch.nn import functional as F
 import torch
-
+import gc
 
 def get_key_frame(videos):
     # videos: BCTHW
@@ -16,6 +16,8 @@ def calculate_clipsim(videos, prompts, device):
     frames = get_key_frame(videos)
     score = metric(frames.to(device), prompts)
     score = score.detach().item()
+    del metric 
+    gc.collect()
     return score
 
 def calculate_fvd(videos1, videos2, device):
