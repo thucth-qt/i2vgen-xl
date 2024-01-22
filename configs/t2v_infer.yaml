@@ -1,7 +1,6 @@
 TASK_TYPE: inference_text2video_entrance
 use_fp16: True
 guide_scale: 9.0
-use_fp16: True
 chunk_size: 2
 decoder_bs: 2
 max_frames: 16

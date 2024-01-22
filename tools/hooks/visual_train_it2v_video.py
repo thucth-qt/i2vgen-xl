@@ -42,7 +42,7 @@ class VisualTrainTextImageToVideo(object):
         
         cfg = self.cfg
         viz_num = min(self.viz_num, video_data.size(0))
-        noise = torch.randn_like(video_data[:viz_num])
+        noise = torch.randn_like(video_data[:viz_num]) #1, 4, 16, 32, 56
         if self.use_offset_noise:
             noise_strength = getattr(cfg, 'noise_strength', 0)
             b, c, f, *_ = video_data[:viz_num].shape
@@ -67,16 +67,16 @@ class VisualTrainTextImageToVideo(object):
                     ddim_timesteps=cfg.ddim_timesteps,
                     eta=0.0)
             
-            video_data = 1. / cfg.scale_factor * video_data # [64, 4, 32, 48]
+            video_data = 1. / cfg.scale_factor * video_data 
             video_data = rearrange(video_data, 'b c f h w -> (b f) c h w')
             chunk_size = min(cfg.decoder_bs, video_data.shape[0])
             video_data_list = torch.chunk(video_data, video_data.shape[0]//chunk_size,dim=0)
             decode_data = []
-            for vd_data in video_data_list:
-                gen_frames = self.autoencoder.decode(vd_data)
+            for vd_data in video_data_list:#[4, 4, 32, 56]
+                gen_frames = self.autoencoder.decode(vd_data) #[4, 3, 256, 448]
                 decode_data.append(gen_frames)
-            video_data = torch.cat(decode_data, dim=0)
-            video_data = rearrange(video_data, '(b f) c h w -> b c f h w', b = viz_num)
+            video_data = torch.cat(decode_data, dim=0) #16, 3, 256, 448
+            video_data = rearrange(video_data, '(b f) c h w -> b c f h w', b = viz_num) #1, 3, 16, 256, 448
 
             text_size = cfg.resolution[-1]
             ref_frame = ref_frame[:viz_num]

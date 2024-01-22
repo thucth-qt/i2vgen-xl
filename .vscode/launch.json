@@ -9,9 +9,9 @@
             "type": "python",
             "request": "launch",
             "program": "train_net.py",
-            // "args":["--cfg","configs/ultrasound_t2v_train.yaml"],
-            "args":["--cfg","configs/t2v_train.yaml"],
-            "env": {"CUDA_VISIBLE_DEVICES":"6"},
+            // "args":["--cfg","configs/cfg_train.yaml"],
+            "args":["--cfg","configs/cfg_train_breadcancer.yaml"],
+            "env": {"CUDA_VISIBLE_DEVICES":"4"},
             "console": "integratedTerminal",
             "justMyCode": true
         }

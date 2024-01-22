@@ -200,7 +200,7 @@ def worker(gpu, cfg):
         ref_frame, _, video_data, captions, video_key = batch
         batch_size, frames_num, _, _, _ = video_data.shape
         video_data = rearrange(video_data, 'b f c h w -> (b f) c h w')
-
+        video_data_rgb = video_data.clone()
         fps_tensor =  torch.tensor([cfg.sample_fps] * batch_size, dtype=torch.long, device=gpu)
         video_data_list = torch.chunk(video_data, video_data.shape[0]//cfg.chunk_size,dim=0)
         with torch.no_grad():
@@ -239,7 +239,7 @@ def worker(gpu, cfg):
                         model_kwargs=model_kwargs, 
                         use_div_loss=cfg.use_div_loss) # cfg.use_div_loss: False    loss: [80]
                 loss = loss.mean()
-        
+                        
         # backward
         if cfg.use_fsdp:
             optimizer.zero_grad()
@@ -281,10 +281,34 @@ def worker(gpu, cfg):
                             'fps': fps_tensor[:viz_num],
                         }
                     ]
+                    model_kwargs=[
+                        {
+                            'y': y_words_0,
+                            'fps': fps_tensor,
+                        },
+                        {
+                            'y': zero_y_negative.repeat(y_words_0.size(0), 1, 1),
+                            'fps': fps_tensor,
+                        }
+                    ]
                     input_kwards = {
                         'model': model, 'video_data': video_data[:viz_num], 'step': step, 
                         'ref_frame': ref_frame[:viz_num], 'captions': captions[:viz_num]}
-                    visual_func.run(visual_kwards=visual_kwards, **input_kwards)
+                    # visual_func.run(visual_kwards=visual_kwards, **input_kwards)
+
+                    # model.to("cpu")
+                    metrics = diffusion.compute_metrics(x0=video_data, 
+                                                            prompts = captions, 
+                                                            autoencoder=autoencoder,
+                                                            model_kwargs=model_kwargs,
+                                                            model=model,
+                                                            ddim_timesteps = cfg.ddim_timesteps,
+                                                            decoder_bs = cfg.decoder_bs,
+                                                            scale_factor = cfg.scale_factor,
+                                                            batch_size=batch_size,
+                                                            ref_frames=ref_frame)
+                    print(metrics)
+                    
                 except Exception as e:
                     logging.info(f'Save videos with exception {e}')
         

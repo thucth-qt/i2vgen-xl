@@ -1,11 +1,15 @@
 import torch
 import math
+from einops import rearrange
+from tqdm import tqdm
+import numpy as np 
+import torch.cuda.amp as amp
 
 from utils.registry_class import DIFFUSION
 from .schedules import beta_schedule
 from .losses import kl_divergence, discretized_gaussian_log_likelihood
+from tools.metrics import calculate_fvd, calculate_clipsim
 # from .dpm_solver import NoiseScheduleVP, model_wrapper_guided_diffusion, model_wrapper, DPM_Solver
-
 # def _i(tensor, t, x):
 #     r"""Index tensor using t and format the output according to x.
 #     """
@@ -244,9 +248,13 @@ class DiffusionDDIM(object):
 
         # diffusion process (TODO: clamp is inaccurate! Consider replacing the stride by explicit prev/next steps)
         steps = (1 + torch.arange(0, self.num_timesteps, self.num_timesteps // ddim_timesteps)).clamp(0, self.num_timesteps - 1).flip(0)
-        for step in steps:
-            t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
-            xt, _ = self.ddim_sample(xt, t, model, model_kwargs, clamp, percentile, condition_fn, guide_scale, ddim_timesteps, eta)
+        for step in tqdm(steps):
+            try:
+                t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
+                xt, _ = self.ddim_sample(xt, t, model, model_kwargs, clamp, percentile, condition_fn, guide_scale, ddim_timesteps, eta)
+            except Exception as e:
+                print(e)
+                pass
         return xt
     
     @torch.no_grad()
@@ -440,7 +448,88 @@ class DiffusionDDIM(object):
             # total loss
             loss = loss + loss_vlb
         return loss
+    
+    def decode_latent_to_rgb(self, 
+                            video_data, 
+                            autoencoder=None, 
+                            decoder_bs=2, 
+                            scale_factor = 0.18215, 
+                            batch_size=1, 
+                            mean=[0.5, 0.5, 0.5], 
+                            std=[0.5, 0.5, 0.5]):
+        video_data = 1. / scale_factor * video_data # [2, 4, 16, 32, 56]
+        video_data = rearrange(video_data, 'b c f h w -> (b f) c h w') # [2, 4, 16, 32, 56] -> [32, 4, 32, 56]
+        chunk_size = min(decoder_bs, video_data.shape[0])
+        video_data_list = torch.chunk(video_data, video_data.shape[0]//chunk_size, dim=0)
+        decode_data = []
+        for vd_data in video_data_list:
+            gen_frames = autoencoder.decode(vd_data)
+            decode_data.append(gen_frames)
+        video_data = torch.cat(decode_data, dim=0) #torch.Size([32, 3, 256, 448])
+        video_data = rearrange(video_data, '(b f) c h w -> b c f h w', b = batch_size) # [4, 3, 8, 256, 448]
 
+        vid_mean = torch.tensor(mean, device=video_data.device).view(1, -1, 1, 1, 1) #ncfhw
+        vid_std = torch.tensor(std, device=video_data.device).view(1, -1, 1, 1, 1) #ncfhw
+
+        video_data = video_data.mul_(vid_std).add_(vid_mean)  # 8x3x16x256x384
+        video_data.clamp_(0, 1)
+        video_data = video_data * 255.0
+
+        images = rearrange(video_data, 'b c f h w -> b f h w c') # [4, 8, 256, 448, 3]
+        images = images.detach().cpu().numpy().astype('uint8') # images = images[0]
+        # images = [(img.detach().cpu().numpy()).astype('uint8') for img in images]
+        return images
+        
+
+    def __trans(self,x):
+        # if greyscale images add channel
+        if x.shape[-3] == 1:
+            x = x.repeat(1, 1, 3, 1, 1)
+
+        # permute BTCHW -> BCTHW
+        x = np.transpose(x, (0, 2, 1, 3, 4))
+
+        return x
+    def compute_metrics(self, x0,  prompts, autoencoder, model,
+                            model_kwargs={},
+                            ddim_timesteps=50,
+                            decoder_bs=2, 
+                            scale_factor = 0.18215, 
+                            batch_size=1, 
+                            ref_frames=None, 
+                            noise=None):
+        # noise = torch.randn_like(x0) if noise is None else noise # [80, 4, 8, 32, 32]
+
+        # predict xt
+        try:
+            #x0 ([2, 4, 16, 32, 56]
+            with amp.autocast(enabled=True):
+                xt = self.ddim_sample_loop( #([2, 4, 16, 32, 56]
+                            noise=torch.randn_like(x0),
+                            model=model.eval(),
+                            model_kwargs=model_kwargs,
+                            guide_scale=9.0,
+                            ddim_timesteps=ddim_timesteps,
+                            eta=0.0)
+        except Exception as e:
+            print(e)
+            pass
+        # xt = self.q_sample(x0, t, noise=noise)
+
+
+        # Compute metrics
+        videos1 = self.decode_latent_to_rgb(x0, autoencoder, decoder_bs=decoder_bs, scale_factor=scale_factor, batch_size=batch_size)  # Assuming x0 represents videos
+        videos2 = self.decode_latent_to_rgb(xt, autoencoder, decoder_bs=decoder_bs, scale_factor=scale_factor, batch_size=batch_size)  # Assuming x0 represents videos
+        # videos: BCTHW
+
+        # Calculate FVD
+        fvd_score = calculate_fvd(torch.from_numpy(videos1), torch.from_numpy(videos2), device=x0.device) 
+
+        # Calculate CLIP similarity
+        clipsim_score = calculate_clipsim(torch.from_numpy(videos2), prompts, device=x0.device) 
+        metrics={"fvd":fvd_score, "clipsim":clipsim_score}
+        return metrics
+    
     def variational_lower_bound(self, x0, xt, t, model, model_kwargs={}, clamp=None, percentile=None):
         # compute groundtruth and predicted distributions
         mu1, _, log_var1 = self.q_posterior_mean_variance(x0, xt, t)

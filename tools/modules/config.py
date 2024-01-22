@@ -191,6 +191,7 @@ cfg.log_dir = 'workspace/temp_dir'
 # ---------------------------Others--------------------------------------------
 # seed 
 cfg.seed = 8888
-cfg.negative_prompt = 'Distorted, discontinuous, Ugly, blurry, low resolution, motionless, static, disfigured, disconnected limbs, Ugly faces, incomplete arms'
+# cfg.negative_prompt = 'Distorted, discontinuous, Ugly, blurry, low resolution, motionless, static, disfigured, disconnected limbs, Ugly faces, incomplete arms'
+cfg.negative_prompt = 'Distorted, Ugly, blurry, low resolution, motionless, static, disfigured, disconnected limbs, Ugly faces, incomplete arms, bad quality, low quality'
 # -----------------------------------------------------------------------------
 
