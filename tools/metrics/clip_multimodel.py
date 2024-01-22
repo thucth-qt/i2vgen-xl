@@ -20,7 +20,6 @@ from typing_extensions import Literal
 
 from torchmetrics import Metric
 from .clip_functional import _clip_score_update, _get_clip_model_and_processor
-# from clip_functional import _clip_score_update, _get_clip_model_and_processor
 import operator
 import logging
 import multiprocessing
